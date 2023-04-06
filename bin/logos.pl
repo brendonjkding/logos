@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use 5.006;
 use warnings;
@@ -237,7 +237,7 @@ foreach my $line (@lines) {
 			my $className = $1;
 			my $expr = undef;
 			if(index($className, ".") != -1 ) {
-				fileWarning($lineno, "Hooking Objective-C bridged Swift class $className has unintuitive behaviour and won’t catch all invocations, see https://github.com/theos/theos/wiki/Swift#tweaks for more details.");
+				fileWarning($lineno, "Hooking Objective-C bridged Swift class $className has unintuitive behaviour and won’t catch all invocations, see https://theos.dev/docs/swift for more details.");
 				$expr = "objc_getClass(\"$className\")";
 				$className =~ s/\./_/g;
 			}
@@ -319,7 +319,7 @@ foreach my $line (@lines) {
 			my $className = $2;
 			my $unescapedClassName = $2;
 			if(index($className, ".") != -1 ) {
-				fileWarning($lineno, "Dynamic lookup of Objective-C bridged Swift class $className has unintuitive behaviour and won’t catch all invocations, see https://github.com/theos/theos/wiki/Swift#tweaks for more details.");
+				fileWarning($lineno, "Dynamic lookup of Objective-C bridged Swift class $className has unintuitive behaviour and won’t catch all invocations, see https://theos.dev/docs/swift for more details.");
 				$className =~ s/\./_/g;
 			}
 			if($scope eq "+") {
@@ -785,7 +785,7 @@ if(@firstDirectivePosition) {
 		}
 		$above = $lines[$line-1] if !defined $above;
 
-		last if $depth == 0 && $above =~ /^\s*$/;
+		last if $depth == 0 && ($above =~ /^\s*$/ || $above =~ /^\s*([#\@]import|#include)\s/);
 
 		$line-- if($pos == 0);
 		$pos = 0;

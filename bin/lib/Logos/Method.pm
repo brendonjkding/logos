@@ -155,7 +155,7 @@ sub printArgForArgType {
 	return "(long)$argname" if $argtype =~ /^NS(Integer|SocketNativeHandle|StringEncoding|SortOptions|ComparisonResult|EnumerationOptions|(Hash|Map)TableOptions|SearchPath(Directory|DomainMask))$/i;
 	return "(unsigned long)$argname" if $argtype =~ /^NSUInteger$/i;
 
-	return ($fallthrough ? "(unsigned int)" : "").$argname;
+	return ($fallthrough ? "(uint64_t)" : "").$argname;
 }
 
 sub formatCharForArgType {
@@ -195,6 +195,7 @@ sub formatCharForArgType {
 	return "%p" if /\[.*\]$/; # any array
 
 	# Objects
+	return "%@" if /^instancetype$/; # instancetype is an objc_object.
 	return "%@" if /^id$/; # id is an objc_object.
 	return "%@" if /^\w+\s*\*$/; # try to treat *any* other pointer as an objc_object.
 	return "%@" if /^\w+Ref$/; # *Ref can be printed with %@.
@@ -218,8 +219,8 @@ sub formatCharForArgType {
 	return "--" if /^struct/; # structs that aren't covered by 'struct ... *'
 
 	# Fallthrough - Treat everything we don't understand as POD.
-	return ("0x%x", 1) if wantarray; # The 1 is the fallthrough flag - used to signal to argName(...) that we should be casting.
-	return "0x%x";
+	return ("0x%llx", 1) if wantarray; # The 1 is the fallthrough flag - used to signal to argName(...) that we should be casting.
+	return "0x%llx";
 }
 
 sub typeEncodingForArgType {
