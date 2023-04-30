@@ -29,15 +29,34 @@ use aliased 'Logos::Function';
 
 use Logos::Generator;
 
-%main::CONFIG = ( generator => "MobileSubstrate",
-		  warnings => "default",
-		);
+%main::CONFIG = (
+	generator => "MobileSubstrate",
+	warnings => "default",
+);
 $main::warnings = 0;
 
-GetOptions("config|c=s" => \%main::CONFIG);
+my $script = $FindBin::Script;
+my $usage = <<"EOF";
+Usage: $script [options] <filename>
+Options:
+  [-c|--config]		Modify Logos' configuration (MobileSubstrate, default)
+     -c generator=[internal|libhooker|MobileSubstrate]
+     -c warnings=[default|error|none]
+  [-h|--help]		Display this page
+EOF
+
+my $opt_help;
+GetOptions(
+	"config|c=s" 	=> \%main::CONFIG,
+	"help|h"     	=> \$opt_help,
+);
+if ($opt_help) {
+	print $usage;
+	exit 0;
+}
 
 my $filename = $ARGV[0];
-die "Syntax: $FindBin::Script filename\n" if !$filename;
+die "Usage: $script [options] <filename>\nRun $script --help for more details\n" if !$filename;
 open(FILE, $filename) or die "Could not open $filename.\n";
 
 my @lines = ();
@@ -91,7 +110,8 @@ READLOOP: while(my $line = <FILE>) {
 	# Delete all single-line to-EOL // xxx comments.
 	# This needs to be first so that //*something doesn't match as a /*
 	while($line =~ /\/\//g) {
-		next if fallsBetween($-[0], @quotes);
+		# If // is part of a single-line /**/ comment, skip and handle below
+		next if ($line =~ /^.*?\*\/\s*/ || fallsBetween($-[0], @quotes));
 		$line = $`;
 		redo READLOOP;
 	}
@@ -278,6 +298,16 @@ foreach my $line (@lines) {
 		} elsif($line =~ /\G%group\s+([\$_\w]+)/gc) {
 			# %group <identifier>
 			fileError($lineno, "%group does not make sense inside a block") if($directiveDepth >= 1);
+
+			# find any hooks in the current nestingstack
+			my(@indexes) = grep { $nestingstack[$_] =~ /hook/ } 0..$#nestingstack;
+			foreach my $i (@indexes) {
+				# grab line number for each hook and check
+				# against the current lineno of the %group(s)
+				(my $hookno = $nestingstack[$i]) =~ s/\D//g;
+				fileError($lineno, "%group does not make sense inside a hook") if($hookno < $lineno);
+			}
+
 			nestingMustNotContain($lineno, "%group", \@nestingstack, "group");
 
 			@firstDirectivePosition = ($lineno, $-[0]) if !@firstDirectivePosition;
@@ -544,6 +574,7 @@ foreach my $line (@lines) {
 				my $expr = $parts[1];
 
 				my $classname = $parts[0];
+				$classname =~ s/^\s+//;
 				my $scope = "-";
 				if($classname =~ /^([+-])/) {
 					$scope = $1;
@@ -599,6 +630,11 @@ foreach my $line (@lines) {
 			nestingMustContain($lineno, "%property", \@nestingstack, "hook", "subclass");
 
 			$currentClass->hasinstancehooks(1);
+
+			# check %property for attributes
+			if (!defined $1 || $1 eq '') {
+				fileError($lineno, "%property declaration is missing attributes (e.g., nonatomic, retain, etc)");
+			}
 
 			# check property attribute validity
 			my @attributes = split/\(?\s*,\s*\)?/, $1;
