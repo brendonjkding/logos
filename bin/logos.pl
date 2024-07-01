@@ -257,7 +257,7 @@ foreach my $line (@lines) {
 			my $className = $1;
 			my $expr = undef;
 			if(index($className, ".") != -1 ) {
-				fileWarning($lineno, "Hooking Objective-C bridged Swift class $className has unintuitive behaviour and won’t catch all invocations, see https://theos.dev/docs/swift for more details.");
+				# fileWarning($lineno, "Hooking Objective-C bridged Swift class $className has unintuitive behaviour and won’t catch all invocations, see https://theos.dev/docs/swift for more details.");
 				$expr = "objc_getClass(\"$className\")";
 				$className =~ s/\./_/g;
 			}
