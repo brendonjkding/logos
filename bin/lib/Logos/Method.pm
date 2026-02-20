@@ -126,10 +126,10 @@ sub methodFamily {
 		if ($selector =~ /^init($|[A-Z,:])/) {
 			return "init" if $self->return eq "id" || $self->return eq "instancetype";
 		}
-		if (($selector eq "copy") || ($selector eq "copyWithZone:")) {
+		if ($selector =~ /^copy($|[A-Z,:])/) {
 			return "copy";
 		}
-		if (($selector eq "mutableCopy") || ($selector eq "mutableCopyWithZone:")) {
+		if ($selector =~ /^mutableCopy($|[A-Z,:])/) {
 			return "mutableCopy";
 		}
 	}
